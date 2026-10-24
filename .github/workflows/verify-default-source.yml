@@ -17,8 +17,10 @@ jobs:
           pactl set-default-sink test_speaker
           pactl set-default-source test_mic
           pactl info | grep -E "Server Name|Server Version|Default"
-          cargo update -q -p libpulse-binding --precise 2.28.1
-          cargo update -q -p libpulse-sys --precise 1.21.0
+          cargo generate-lockfile
+          cargo update -p libpulse-binding --precise 2.28.1
+          cargo update -p libpulse-sys --precise 1.21.0
+          cargo tree -i libpulse-binding --depth 0
           echo "== this branch"
           cargo run -q --example default_devices
           git show origin/master:src/controllers/mod.rs > src/controllers/mod.rs
@@ -45,8 +47,10 @@ jobs:
             pactl set-default-source test_mic
             sleep 2
             pactl info | grep -E "Server Name|Server Version|Default"
-            cargo update -q -p libpulse-binding --precise 2.28.1
-            cargo update -q -p libpulse-sys --precise 1.21.0
+            cargo generate-lockfile
+            cargo update -p libpulse-binding --precise 2.28.1
+            cargo update -p libpulse-sys --precise 1.21.0
+            cargo tree -i libpulse-binding --depth 0
             echo "== this branch"
             cargo run -q --example default_devices
             git show origin/master:src/controllers/mod.rs > src/controllers/mod.rs
