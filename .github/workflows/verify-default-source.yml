@@ -75,6 +75,7 @@ jobs:
           cargo update -p libpulse-sys --precise 1.21.0
           echo "== this branch"
           cargo run -q --example default_source_only
+          cargo run -q --example default_devices
           git show 2a887f4:src/controllers/mod.rs > src/controllers/mod.rs
           echo "== 2a887f4 (unwrap)"
           cargo run -q --example default_source_only || echo "exit code $?"
