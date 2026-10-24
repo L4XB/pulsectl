@@ -1,0 +1,55 @@
+name: verify default source
+on: push
+jobs:
+  pulseaudio:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: sudo apt-get update -q && sudo apt-get install -y -q pulseaudio pulseaudio-utils libpulse-dev
+      - name: default devices under PulseAudio, this branch vs master
+        run: |
+          pulseaudio -D --exit-idle-time=-1
+          sleep 2
+          pactl load-module module-null-sink sink_name=test_speaker
+          pactl load-module module-remap-source master=test_speaker.monitor source_name=test_mic
+          pactl set-default-sink test_speaker
+          pactl set-default-source test_mic
+          pactl info | grep -E "Server Name|Server Version|Default"
+          cargo update -q -p libpulse-binding --precise 2.28.1
+          cargo update -q -p libpulse-sys --precise 1.21.0
+          echo "== this branch"
+          cargo run -q --example default_devices
+          git show origin/master:src/controllers/mod.rs > src/controllers/mod.rs
+          echo "== master"
+          cargo run -q --example default_devices
+  pipewire:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: sudo apt-get update -q && sudo apt-get install -y -q pipewire pipewire-pulse wireplumber pulseaudio-utils libpulse-dev dbus
+      - name: default devices under PipeWire (pipewire-pulse), this branch vs master
+        run: |
+          export XDG_RUNTIME_DIR=$(mktemp -d)
+          dbus-run-session -- bash -ec '
+            pipewire & sleep 1
+            wireplumber & sleep 2
+            pipewire-pulse & sleep 3
+            pactl load-module module-null-sink sink_name=test_speaker
+            pactl load-module module-remap-source master=test_speaker.monitor source_name=test_mic
+            sleep 2
+            pactl set-default-sink test_speaker
+            pactl set-default-source test_mic
+            sleep 2
+            pactl info | grep -E "Server Name|Server Version|Default"
+            cargo update -q -p libpulse-binding --precise 2.28.1
+            cargo update -q -p libpulse-sys --precise 1.21.0
+            echo "== this branch"
+            cargo run -q --example default_devices
+            git show origin/master:src/controllers/mod.rs > src/controllers/mod.rs
+            echo "== master"
+            cargo run -q --example default_devices
+          '
