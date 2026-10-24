@@ -57,3 +57,24 @@ jobs:
             echo "== master"
             cargo run -q --example default_devices
           '
+  pulseaudio-no-source:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: sudo apt-get update -q && sudo apt-get install -y -q pulseaudio pulseaudio-utils libpulse-dev
+      - name: server without any sink or source, this branch vs the PR's first commit (unwrap)
+        run: |
+          pulseaudio -n -D --exit-idle-time=-1 --load=module-native-protocol-unix
+          sleep 2
+          pactl info | grep -E "Server Name|Server Version|Default"
+          echo "sources: $(pactl list short sources | wc -l)"
+          cargo generate-lockfile
+          cargo update -p libpulse-binding --precise 2.28.1
+          cargo update -p libpulse-sys --precise 1.21.0
+          echo "== this branch"
+          cargo run -q --example default_source_only
+          git show 2a887f4:src/controllers/mod.rs > src/controllers/mod.rs
+          echo "== 2a887f4 (unwrap)"
+          cargo run -q --example default_source_only || echo "exit code $?"
